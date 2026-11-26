@@ -630,6 +630,10 @@ Machine-discovered MCP servers and skills are not part of the portable definitio
 | LiteLLM proxy  | `litellm/`        | Auto-detected locally; `LITELLM_BASE_URL` for a custom proxy, optional key |
 | AI/ML API      | `aimlapi/`        | `AIMLAPI_API_KEY` (create one at https://aimlapi.com/app/keys)             |
 
+On a first run where no provider is set up (no AWS profile or credentials, no other provider variable,
+no running Ollama or LiteLLM), setup opens on AI/ML API with `openai/gpt-5.6-luna`. Any detected provider
+or saved model keeps the harness default.
+
 The CLI does not store provider secrets. Setup detects credentials from the process environment,
 explicitly selected env files, AWS profiles, and other credential sources supported by the
 provider SDK.

@@ -1616,6 +1616,55 @@ describe('setup presentation', () => {
     }
   })
 
+  it.each([
+    ['no provider is set up', 'missing', 'https://aimlapi.com/app/keys', 'claude-opus'],
+    ['AWS credentials are found', 'valid', 'claude-opus', 'aimlapi.com'],
+  ] as const)('opens first-run Quickstart when %s', async (_case, credentials, detail, absent) => {
+    vi.mocked(discoverAwsCredentials).mockResolvedValue(credentials)
+    vi.mocked(discoverProviderModels).mockResolvedValue({
+      available: true,
+      models: [{ id: 'anthropic.claude-opus-5-5', name: 'claude-opus' }],
+    })
+    const input = ttyInput()
+    const output = ttyOutput(120, 52)
+    let frame = ''
+    output.on('data', (chunk: Buffer) => {
+      if (chunk.toString().includes('\n')) frame = sanitizeTerminalText(chunk.toString())
+    })
+    const config = CliConfigStore.memory({}, { animations: false }, { onboardingVersion: 0 })
+    const instance = render(createElement(SetupWizard, { config, onComplete: () => {}, deferred: true }), {
+      stdin: input,
+      stdout: output,
+      stderr: output,
+      interactive: true,
+      debug: true,
+      incrementalRendering: false,
+      patchConsole: false,
+      exitOnCtrlC: false,
+    })
+    try {
+      await instance.waitUntilRenderFlush()
+      await vi.waitFor(() => expect(frame).toContain('Quickstart'))
+      await vi.waitFor(async () => {
+        const lines = frame.split('\n')
+        const row = lines.findIndex((line) => line.includes('Quickstart'))
+        const column = lines[row]!.indexOf('Quickstart')
+        input.push(mouseInputSequence(0, column, row, 'M'))
+        input.push(mouseInputSequence(3, column, row, 'm'))
+        await instance.waitUntilRenderFlush()
+        expect(frame).toContain('Pick a model for your agent')
+      })
+      await vi.waitFor(() => expect(frame).toContain(detail))
+      expect(frame).not.toContain(absent)
+      expect(config.snapshot().profile.model).toBe(DEFAULT_HARNESS_AGENT_CONFIG.model)
+    } finally {
+      instance.unmount()
+      await instance.waitUntilExit()
+      vi.mocked(discoverAwsCredentials).mockResolvedValue('valid')
+      vi.mocked(discoverProviderModels).mockResolvedValue({ available: true, models: [] })
+    }
+  })
+
   it('detects local providers without asking for endpoint URLs', async () => {
     vi.stubEnv('OLLAMA_HOST', undefined)
     vi.stubEnv('LITELLM_BASE_URL', undefined)

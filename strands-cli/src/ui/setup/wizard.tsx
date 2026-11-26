@@ -53,6 +53,7 @@ import {
   providerAssessment,
   providerFromModel,
   quickstartDraft,
+  setupStartModel,
   useProviderDiscovery,
   useProviderDiscoveryEffects,
 } from './providers.js'
@@ -487,6 +488,48 @@ function SetupWizardContent({
     providerModels.error,
     recheck,
     step,
+    updateProfile,
+  ])
+  // A first run opens provider setup on AI/ML API once the provider checks settle and find nothing else set
+  // up. Applied once, and only while the user is still on the untouched opening provider.
+  const startModelApplied = useRef(providerOnly || !config.needsSetup())
+  const providerChecksSettled =
+    awsDiscovery.credentialStatus !== undefined && ollamaDiscovery !== undefined && liteLlmDiscovery !== undefined
+  useEffect(() => {
+    if (startModelApplied.current || !isProviderSetup || !providerChecksSettled) {
+      return
+    }
+    startModelApplied.current = true
+    const startModel = setupStartModel(
+      draft.profile.model,
+      true,
+      true,
+      readyProviders,
+      effectiveEnvironment,
+      awsDiscovery,
+      ollamaDiscovery,
+      liteLlmDiscovery
+    )
+    const provider = providerFromModel(startModel)
+    const untouched = quickstartProvider === 'bedrock' && selection === PROVIDER_IDS.indexOf('bedrock')
+    if (startModel === draft.profile.model || !provider || !untouched) {
+      return
+    }
+    const next = quickstartDraft(startModel).profile
+    updateProfile({ model: startModel, effort: next.effort, caching: next.caching })
+    setQuickstartProvider(provider)
+    setSelection(PROVIDER_IDS.indexOf(provider))
+  }, [
+    awsDiscovery,
+    draft.profile.model,
+    effectiveEnvironment,
+    isProviderSetup,
+    liteLlmDiscovery,
+    ollamaDiscovery,
+    providerChecksSettled,
+    quickstartProvider,
+    readyProviders,
+    selection,
     updateProfile,
   ])
   const selectedModelProvider = providerFromModel(draft.profile.model)

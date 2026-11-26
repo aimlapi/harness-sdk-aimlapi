@@ -18,6 +18,7 @@ import {
   modelProviderNeedsSetup,
   providerAssessment,
   quickstartDraft,
+  setupStartModel,
 } from '../../src/ui/setup/providers.js'
 import {
   builtinToolChoices,
@@ -340,6 +341,56 @@ describe('setup provider credentials', () => {
     apiKey?.activate()
     expect(setEditing).toHaveBeenCalledWith({ field: 'OPENAI_API_KEY', value: '' })
     vi.unstubAllEnvs()
+  })
+
+  it('starts a first run on AI/ML API only when nothing else is set up', () => {
+    const none = { profiles: [], regions: [], credentialStatus: 'missing' as const }
+    const noOllama = { installed: false, running: false, models: [] }
+    const noLiteLlm = { reachable: false, authenticationRequired: false, models: [] }
+    const model = DEFAULT_HARNESS_AGENT_CONFIG.model
+    const start = (
+      overrides: Partial<{
+        model: string
+        firstRun: boolean
+        settled: boolean
+        ready: ('bedrock' | 'aimlapi')[]
+        environment: DetectedProviderEnvironment
+        aws: typeof none | { profiles: string[]; regions: never[]; credentialStatus: 'missing' }
+        ollama: typeof noOllama
+        litellm: typeof noLiteLlm
+      }> = {}
+    ): string =>
+      setupStartModel(
+        overrides.model ?? model,
+        overrides.firstRun ?? true,
+        overrides.settled ?? true,
+        overrides.ready ?? [],
+        overrides.environment ?? {},
+        overrides.aws ?? none,
+        overrides.ollama ?? noOllama,
+        overrides.litellm ?? noLiteLlm
+      )
+
+    expect(start()).toBe('aimlapi/openai/gpt-5.6-luna')
+    expect(start({ ready: ['aimlapi'], environment: { AIMLAPI_API_KEY: { value: 'k', source: 'process' } } })).toBe(
+      'aimlapi/openai/gpt-5.6-luna'
+    )
+    expect(start({ firstRun: false })).toBe(model)
+    expect(start({ settled: false })).toBe(model)
+    expect(start({ model: 'openai/gpt-5.6-sol' })).toBe('openai/gpt-5.6-sol')
+    expect(start({ ready: ['bedrock'] })).toBe(model)
+    expect(start({ aws: { profiles: ['work'], regions: [], credentialStatus: 'missing' } })).toBe(model)
+    expect(start({ environment: { OPENAI_API_KEY: { value: 'k', source: 'process' } } })).toBe(model)
+    expect(
+      start({
+        environment: {
+          OPENAI_API_KEY: { value: 'k', source: 'process' },
+          AIMLAPI_API_KEY: { value: 'k', source: 'process' },
+        },
+      })
+    ).toBe(model)
+    expect(start({ ollama: { installed: true, running: false, models: [] } })).toBe(model)
+    expect(start({ litellm: { reachable: true, authenticationRequired: false, models: [] } })).toBe(model)
   })
 
   it('points to the AI/ML API key page until AIMLAPI_API_KEY is set', () => {

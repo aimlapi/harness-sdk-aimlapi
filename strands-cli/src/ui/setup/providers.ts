@@ -90,6 +90,38 @@ export const PROVIDERS: Readonly<
   },
 }
 
+/** The model a first run starts from when no provider is set up yet. */
+export const AIMLAPI_SETUP_MODEL = 'aimlapi/openai/gpt-5.6-luna'
+
+/**
+ * The model the setup flow opens on. A first run where no other provider is set up starts on AI/ML API, which
+ * needs only one key. A saved or non-default model, any sign of another provider (AWS profile or credentials,
+ * a running Ollama or LiteLLM, another provider variable), or provider checks still running (`settled` false)
+ * keep the harness default.
+ */
+export function setupStartModel(
+  model: string,
+  firstRun: boolean,
+  settled: boolean,
+  readyProviders: readonly ProviderId[],
+  environment: DetectedProviderEnvironment,
+  aws: AwsConfigurationDiscovery,
+  ollama: OllamaDiscovery | undefined,
+  litellm: LiteLlmDiscovery | undefined
+): string {
+  if (!firstRun || !settled || model !== DEFAULT_HARNESS_AGENT_CONFIG.model) {
+    return model
+  }
+  const otherProvider =
+    readyProviders.some((provider) => provider !== 'aimlapi') ||
+    aws.profiles.length > 0 ||
+    aws.credentialStatus === 'valid' ||
+    ollama?.installed === true ||
+    litellm?.reachable === true ||
+    Object.entries(environment).some(([key, value]) => key !== 'AIMLAPI_API_KEY' && value !== undefined)
+  return otherProvider ? model : AIMLAPI_SETUP_MODEL
+}
+
 export function quickstartDraft(model = DEFAULT_HARNESS_AGENT_CONFIG.model): SetupDraft {
   const provider = providerFromModel(model) ?? 'bedrock'
   // AI/ML API, like the local providers, gets no reasoning level or cache config from the harness.
