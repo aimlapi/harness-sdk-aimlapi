@@ -204,6 +204,34 @@ describe('LiteLLM proxy discovery', () => {
   })
 })
 
+describe('AI/ML API model discovery', () => {
+  it('reads the public catalog without the key and keeps chat models with tool calling', async () => {
+    const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new globalThis.Response(
+        JSON.stringify({
+          data: [
+            {
+              id: 'openai/gpt-5.6-luna',
+              type: 'openai/chat-completions',
+              info: { name: 'GPT-5.6 Luna' },
+              capabilities: ['streaming', 'tools', 'vision'],
+            },
+            { id: 'vendor/no-tools', type: 'openai/chat-completions', capabilities: ['streaming'] },
+            { id: 'vendor/image-model', type: 'image', capabilities: ['tools'] },
+          ],
+        })
+      )
+    )
+
+    await expect(
+      discoverProviderModels('aimlapi', { AIMLAPI_API_KEY: { value: 'aiml-test-key', source: 'session' } })
+    ).resolves.toEqual({ available: true, models: [{ id: 'openai/gpt-5.6-luna', name: 'GPT-5.6 Luna' }] })
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(fetch.mock.calls[0]?.[0]).toBe('https://api.aimlapi.com/v1/models?include=all')
+    expect(JSON.stringify(fetch.mock.calls[0]?.[1] ?? {})).not.toContain('aiml-test-key')
+  })
+})
+
 describe('provider model discovery errors', () => {
   it('retains the HTTP failure reason without exposing credential values', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new globalThis.Response('', { status: 401 }))

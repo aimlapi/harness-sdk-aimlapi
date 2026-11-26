@@ -1792,7 +1792,7 @@ describe('setup refresh', () => {
       }
     )
     const input = ttyInput()
-    const output = ttyOutput(120, 50)
+    const output = ttyOutput(120, 52)
     const onComplete = vi.fn()
     let frame = ''
     output.on('data', (chunk: Buffer) => {

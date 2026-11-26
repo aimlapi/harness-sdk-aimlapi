@@ -994,3 +994,45 @@ def test_supports_media_requires_every_router_candidate_to_support_it():
         ]
     )
     assert _supports_media(mixed) is False
+
+
+def test_aimlapi_uses_fixed_endpoint_and_own_key(monkeypatch):
+    monkeypatch.setenv("AIMLAPI_API_KEY", "aiml-test-key")
+    monkeypatch.setenv("OPENAI_API_KEY", "openai-test-key")
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://elsewhere.example/v1")
+    model = resolve("aimlapi/openai/gpt-5.6-luna")
+    assert model.client_args == {"api_key": "aiml-test-key", "base_url": "https://api.aimlapi.com/v1"}
+    assert model.config["model_id"] == "openai/gpt-5.6-luna"
+    assert "params" not in model.config
+
+
+def test_aimlapi_requires_its_own_key(monkeypatch):
+    monkeypatch.delenv("AIMLAPI_API_KEY", raising=False)
+    monkeypatch.setenv("OPENAI_API_KEY", "openai-test-key")
+    with pytest.raises(ValueError, match="AIMLAPI_API_KEY is not set"):
+        resolve("aimlapi/openai/gpt-5.6-luna")
+
+
+def test_aimlapi_key_is_not_forwarded_on_a_cross_host_redirect(monkeypatch):
+    import asyncio
+
+    import httpx
+    import openai
+
+    monkeypatch.setenv("AIMLAPI_API_KEY", "aiml-test-key")
+    seen: list[tuple[str, str | None]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append((request.url.host, request.headers.get("authorization")))
+        if request.url.host == "api.aimlapi.com":
+            return httpx.Response(307, headers={"location": "https://elsewhere.example/v1/models"})
+        return httpx.Response(200, json={"object": "list", "data": []})
+
+    async def list_models() -> None:
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler), follow_redirects=True) as http:
+            client = openai.AsyncOpenAI(**resolve("aimlapi/openai/gpt-5.6-luna").client_args, http_client=http)
+            await client.models.list()
+
+    asyncio.run(list_models())
+    assert seen[0] == ("api.aimlapi.com", "Bearer aiml-test-key")
+    assert all(auth is None for host, auth in seen if host != "api.aimlapi.com")

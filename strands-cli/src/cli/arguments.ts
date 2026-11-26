@@ -386,7 +386,7 @@ function modelSpecifier(value: string, option: string): string {
   if (!/^[a-z][a-z0-9_-]*$/i.test(provider)) {
     return trimmed
   }
-  const providers = ['bedrock', 'bedrock-mantle', 'anthropic', 'openai', 'google', 'ollama', 'litellm']
+  const providers = ['bedrock', 'bedrock-mantle', 'anthropic', 'openai', 'google', 'ollama', 'litellm', 'aimlapi']
   if (!providers.includes(provider) || !model) {
     throw new Error(
       `${option} must use a supported provider/model string: ${providers.slice(0, -1).join(', ')}, or ${providers.at(-1)}.`

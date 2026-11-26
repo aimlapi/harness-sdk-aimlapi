@@ -74,6 +74,7 @@ _WEB_FETCH_MODELS = {
     "anthropic": "claude-haiku-4-5-20251001",
     "openai": "gpt-5.6-luna",
     "google": "gemini-3.5-flash",
+    "aimlapi": "openai/gpt-5.6-luna",
 }
 
 # Cross-region inference profile prefixes stripped from a Bedrock model id before matching its
@@ -349,6 +350,22 @@ def _litellm(model_id: str, effort: str | None, web_search: bool, caching: bool)
     return LiteLLMModel(client_args=client_args, model_id=model_id)
 
 
+# AI/ML API is OpenAI-compatible (https://docs.aimlapi.com). Its endpoint is fixed rather than read from
+# the environment, so AIMLAPI_API_KEY is only ever sent to this host. Model ids keep the catalog's own
+# ``vendor/name`` form, e.g. ``aimlapi/openai/gpt-5.6-luna``. Kept byte-identical with ``models.ts``.
+AIMLAPI_BASE_URL = "https://api.aimlapi.com/v1"
+
+
+def _aimlapi(model_id: str, effort: str | None, web_search: bool, caching: bool) -> Model:
+    # ``caching`` is unused: no cache config is sent; caching is up to the upstream model.
+    from strands.models.openai import OpenAIModel
+
+    api_key = os.environ.get("AIMLAPI_API_KEY")
+    if not api_key:
+        raise ValueError("AIMLAPI_API_KEY is not set. Create a key at https://aimlapi.com/app/keys.")
+    return OpenAIModel(client_args={"api_key": api_key, "base_url": AIMLAPI_BASE_URL}, model_id=model_id)
+
+
 class Provider(NamedTuple):
     """How one model provider is built and what reasoning/search/caching it supports.
 
@@ -380,6 +397,7 @@ _PROVIDERS = {
     "google": Provider(_gemini, "high", _GOOGLE_LEVELS, web_search=True, caching=True),
     "ollama": Provider(_ollama, None, (), web_search=False, caching=False),
     "litellm": Provider(_litellm, None, (), web_search=False, caching=True),
+    "aimlapi": Provider(_aimlapi, None, (), web_search=False, caching=False),
 }
 
 

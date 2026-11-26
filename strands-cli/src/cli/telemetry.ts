@@ -8,7 +8,16 @@ import { readCliVersion } from '../package-version.js'
 export const TELEMETRY_ENDPOINT = 'https://telemetry.strandsagents.com/ping'
 
 /** Only these providers are reported; a custom provider (`modelModule`) or anything else is omitted. */
-const REPORTED_PROVIDERS = new Set(['bedrock', 'bedrock-mantle', 'anthropic', 'openai', 'google', 'ollama', 'litellm'])
+const REPORTED_PROVIDERS = new Set([
+  'bedrock',
+  'bedrock-mantle',
+  'anthropic',
+  'openai',
+  'google',
+  'ollama',
+  'litellm',
+  'aimlapi',
+])
 
 const OFF = new Set(['0', 'false', 'no', 'off'])
 

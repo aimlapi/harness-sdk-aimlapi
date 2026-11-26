@@ -78,7 +78,8 @@ export async function validateModelSelection(
   if (knownModelIds?.some((id) => normalizeId(id) === normalizeId(target.modelId))) {
     return
   }
-  const complete = catalog?.complete ?? ['ollama', 'openai', 'bedrock-mantle', 'litellm'].includes(target.provider)
+  const complete =
+    catalog?.complete ?? ['ollama', 'openai', 'bedrock-mantle', 'litellm', 'aimlapi'].includes(target.provider)
   const invalid =
     target.provider === 'anthropic' || target.provider === 'google'
       ? (await providerModelExists(target.provider, target.modelId, environment)) === false

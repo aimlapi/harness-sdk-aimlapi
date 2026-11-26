@@ -364,6 +364,7 @@ export const agent = await createHarness({
     ['google', '@google/genai', 'gemini'],
     ['ollama', 'openai', 'ollama'],
     ['litellm', 'openai', 'litellm'],
+    ['aimlapi', 'openai', 'openai'],
   ])('includes provider dependencies for %s in both exports', async (provider, dependency, extra) => {
     const root = await temporaryDirectory()
     const config = defineHarnessAgentConfig({ model: `${provider}/model` })

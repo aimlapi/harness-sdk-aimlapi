@@ -726,6 +726,51 @@ describe('resolveModel', () => {
   })
 })
 
+describe('aimlapi provider', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.restoreAllMocks()
+  })
+
+  function chatResponse(): globalThis.Response {
+    const chunk = { id: 'c', object: 'chat.completion.chunk', created: 0, model: 'm', choices: [] }
+    return new globalThis.Response(`data: ${JSON.stringify(chunk)}\n\ndata: [DONE]\n\n`, {
+      headers: { 'content-type': 'text/event-stream' },
+    })
+  }
+
+  it('sends the key only to api.aimlapi.com, ignores OPENAI_BASE_URL and refuses redirects', async () => {
+    vi.stubEnv('AIMLAPI_API_KEY', 'aiml-test-key')
+    vi.stubEnv('OPENAI_BASE_URL', 'https://elsewhere.example/v1')
+    vi.stubEnv('OPENAI_API_KEY', 'openai-test-key')
+    const fetch = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => chatResponse())
+    const model = await resolve('aimlapi/openai/gpt-5.6-luna')
+    for await (const _ of model.stream([{ role: 'user', content: [{ type: 'textBlock', text: 'hi' }] }] as never)) {
+      // drain
+    }
+    expect(fetch).toHaveBeenCalledTimes(1)
+    const [url, init] = fetch.mock.calls[0]!
+    expect(new URL(String(url)).host).toBe('api.aimlapi.com')
+    expect(String(url)).toBe('https://api.aimlapi.com/v1/chat/completions')
+    expect(new globalThis.Headers(init?.headers).get('authorization')).toBe('Bearer aiml-test-key')
+    expect(init?.redirect).toBe('error')
+    expect(JSON.parse(String(init?.body))).toMatchObject({ model: 'openai/gpt-5.6-luna' })
+  })
+
+  it('requires AIMLAPI_API_KEY and does not fall back to another provider key', async () => {
+    vi.stubEnv('AIMLAPI_API_KEY', '')
+    vi.stubEnv('OPENAI_API_KEY', 'openai-test-key')
+    await expect(resolve('aimlapi/openai/gpt-5.6-luna')).rejects.toThrow(/AIMLAPI_API_KEY is not set/)
+  })
+
+  it('sends no reasoning field and no cache config', async () => {
+    vi.stubEnv('AIMLAPI_API_KEY', 'aiml-test-key')
+    const model = await resolve('aimlapi/openai/gpt-5.6-luna', 'auto', false, true, false)
+    expect(model.getConfig().cacheConfig).toBeUndefined()
+    await expect(resolve('aimlapi/openai/gpt-5.6-luna', 'high')).rejects.toThrow(/not supported/)
+  })
+})
+
 // https://github.com/strands-agents/harness-sdk/issues/4472; the level is the vendor's default for the model from
 // the shared model info (Claude Code, Codex, Gemini CLI), else the provider's high.
 describe('default effort', () => {

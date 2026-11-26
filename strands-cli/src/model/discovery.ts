@@ -281,7 +281,24 @@ async function listProviderModels(
         environment.LITELLM_BASE_URL?.value ?? 'http://127.0.0.1:4000',
         environment.LITELLM_API_KEY?.value
       )
+    case 'aimlapi':
+      return listAimlApiModels()
   }
+}
+
+// The AI/ML API catalog is public, so it is fetched without the API key. It lists every endpoint a
+// model serves; the agent needs chat completions with tool calling.
+async function listAimlApiModels(): Promise<readonly ProviderModel[]> {
+  const value = await fetchJson('https://api.aimlapi.com/v1/models?include=all')
+  return recordArray(value, 'data')
+    .filter(
+      (model) =>
+        model.type === 'openai/chat-completions' &&
+        Array.isArray(model.capabilities) &&
+        model.capabilities.includes('tools')
+    )
+    .map((model) => providerModel(model.id, isRecord(model.info) ? model.info.name : undefined))
+    .filter((model) => model !== undefined)
 }
 
 async function listBedrockMantleModels(environment: DetectedProviderEnvironment): Promise<readonly ProviderModel[]> {

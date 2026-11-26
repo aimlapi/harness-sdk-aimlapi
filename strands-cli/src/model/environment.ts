@@ -23,6 +23,7 @@ export const PROVIDER_ENVIRONMENT_KEYS = [
   'LITELLM_BASE_URL',
   'LITELLM_API_KEY',
   'LITELLM_MODEL',
+  'AIMLAPI_API_KEY',
 ] as const
 
 export type ProviderEnvironmentKey = (typeof PROVIDER_ENVIRONMENT_KEYS)[number]
@@ -35,6 +36,7 @@ export const PROVIDER_CREDENTIAL_KEYS: readonly ProviderEnvironmentKey[] = [
   'OPENAI_API_KEY',
   'GEMINI_API_KEY',
   'LITELLM_API_KEY',
+  'AIMLAPI_API_KEY',
 ]
 
 export type ProviderEnvironment = Partial<Record<ProviderEnvironmentKey, string>>

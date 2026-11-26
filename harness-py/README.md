@@ -97,7 +97,7 @@ The default agent runs on Amazon Bedrock (Claude through Anthropic's Bedrock cli
 installs). To use another provider, grab the matching extra:
 
 ```bash
-pip install "strands-harness[openai]"      # or [anthropic], [gemini] (the `google` provider), [ollama], [litellm]
+pip install "strands-harness[openai]"      # or [anthropic], [gemini] (the `google` provider), [ollama], [litellm]; `aimlapi` uses [openai]
 ```
 
 ## What you get by default
@@ -137,7 +137,8 @@ create_harness(model=OpenAIModel(model_id="gpt-5.6-sol"))   # full control
 ```
 
 The `provider/model` string is a shorthand with aliases for `bedrock`, `bedrock-mantle`, `anthropic`,
-`openai`, `google`, `ollama`, and `litellm`. For any other provider, pass a `Model` instance (as above)
+`openai`, `google`, `ollama`, `litellm`, and `aimlapi` (AI/ML API, OpenAI-compatible, reads
+`AIMLAPI_API_KEY`; model ids keep the catalog form, e.g. `aimlapi/openai/gpt-5.6-luna`). For any other provider, pass a `Model` instance (as above)
 and it's used as-is. Reasoning effort is mapped to whatever each provider expects, so you set it once
 for every provider:
 

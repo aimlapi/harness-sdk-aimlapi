@@ -628,6 +628,7 @@ Machine-discovered MCP servers and skills are not part of the portable definitio
 | Google Gemini  | `google/`         | `GEMINI_API_KEY`                                                           |
 | Ollama         | `ollama/`         | Auto-detected locally; `OLLAMA_HOST` only for a custom server              |
 | LiteLLM proxy  | `litellm/`        | Auto-detected locally; `LITELLM_BASE_URL` for a custom proxy, optional key |
+| AI/ML API      | `aimlapi/`        | `AIMLAPI_API_KEY` (create one at https://aimlapi.com/app/keys)             |
 
 The CLI does not store provider secrets. Setup detects credentials from the process environment,
 explicitly selected env files, AWS profiles, and other credential sources supported by the

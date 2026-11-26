@@ -342,6 +342,25 @@ describe('setup provider credentials', () => {
     vi.unstubAllEnvs()
   })
 
+  it('points to the AI/ML API key page until AIMLAPI_API_KEY is set', () => {
+    expect(providerAssessment('aimlapi', {}, { profiles: [], regions: [] }, undefined).warning).toBe(
+      'AIMLAPI_API_KEY was not detected. Create a key at https://aimlapi.com/app/keys'
+    )
+    expect(
+      providerAssessment(
+        'aimlapi',
+        { AIMLAPI_API_KEY: { value: 'aiml-test-key', source: 'process' } },
+        { profiles: [], regions: [] },
+        undefined
+      ).warning
+    ).toBeUndefined()
+    expect(quickstartDraft('aimlapi/openai/gpt-5.6-luna').profile).toMatchObject({
+      model: 'aimlapi/openai/gpt-5.6-luna',
+      effort: 'off',
+      caching: false,
+    })
+  })
+
   it('asks for a LiteLLM key only when the proxy requests authentication', () => {
     const environment = { LITELLM_API_KEY: { value: 'rejected', source: 'process' as const } }
     const rows = rowsForStep(

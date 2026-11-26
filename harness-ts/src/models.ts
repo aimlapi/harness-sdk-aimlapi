@@ -53,6 +53,7 @@ const WEB_FETCH_MODELS: Record<string, string> = {
   anthropic: 'claude-haiku-4-5-20251001',
   openai: 'gpt-5.6-luna',
   google: 'gemini-3.5-flash',
+  aimlapi: 'openai/gpt-5.6-luna',
 }
 
 // Cross-region inference profile prefixes stripped from a Bedrock model id before matching its
@@ -363,6 +364,31 @@ async function litellm(
   })
 }
 
+// AI/ML API is OpenAI-compatible (https://docs.aimlapi.com). Its endpoint is fixed rather than read from
+// the environment, so AIMLAPI_API_KEY is only ever sent to this host; redirects are refused for the
+// same reason. Model ids keep the catalog's own `vendor/name` form, e.g. `aimlapi/openai/gpt-5.6-luna`.
+export const AIMLAPI_BASE_URL = 'https://api.aimlapi.com/v1'
+
+// `_caching` is unused: no cache config is sent; whether a request is cached is up to the upstream model.
+async function aimlapi(
+  modelId: string,
+  _effort: string | null,
+  _webSearch: boolean,
+  _caching: boolean
+): Promise<Model> {
+  const { OpenAIModel } = await import('@strands-agents/sdk/models/openai')
+  const apiKey = process.env.AIMLAPI_API_KEY
+  if (!apiKey) {
+    throw new Error('AIMLAPI_API_KEY is not set. Create a key at https://aimlapi.com/app/keys.')
+  }
+  return new OpenAIModel({
+    api: 'chat',
+    modelId,
+    apiKey,
+    clientConfig: { baseURL: AIMLAPI_BASE_URL, fetchOptions: { redirect: 'error' } },
+  })
+}
+
 function openAICompatibleBaseUrl(value: string): string {
   return value.replace(/\/+$/u, '').endsWith('/v1') ? value.replace(/\/+$/u, '') : `${value.replace(/\/+$/u, '')}/v1`
 }
@@ -398,6 +424,7 @@ const PROVIDERS: Record<string, Provider> = {
   google: { build: gemini, recommended: 'high', levels: GOOGLE_LEVELS, webSearch: true, caching: true },
   ollama: { build: ollama, recommended: null, levels: NO_THINKING_LEVELS, webSearch: false, caching: false },
   litellm: { build: litellm, recommended: null, levels: NO_THINKING_LEVELS, webSearch: false, caching: true },
+  aimlapi: { build: aimlapi, recommended: null, levels: NO_THINKING_LEVELS, webSearch: false, caching: false },
 }
 
 /** Every value the `effort` option accepts, for validation of untyped (JSON / JS) callers. */

@@ -58,6 +58,8 @@ export const PROVIDERS: Readonly<
     ProviderId,
     {
       fields: readonly ProviderField[]
+      /** Where to create an API key, shown while the key is missing. */
+      keyUrl?: string
     }
   >
 > = {
@@ -82,19 +84,25 @@ export const PROVIDERS: Readonly<
   litellm: {
     fields: [providerField('LITELLM_API_KEY', 'Enter API Key', 'Enter API key')],
   },
+  aimlapi: {
+    fields: [providerField('AIMLAPI_API_KEY', 'Enter API Key', 'Enter API key')],
+    keyUrl: 'https://aimlapi.com/app/keys',
+  },
 }
 
 export function quickstartDraft(model = DEFAULT_HARNESS_AGENT_CONFIG.model): SetupDraft {
   const provider = providerFromModel(model) ?? 'bedrock'
+  // AI/ML API, like the local providers, gets no reasoning level or cache config from the harness.
   const localProvider = provider === 'ollama' || provider === 'litellm'
+  const plainChatProvider = localProvider || provider === 'aimlapi'
   return {
     providers: [provider],
     profile: compatibleProfile({
       ...DEFAULT_HARNESS_AGENT_CONFIG,
       model,
       builtinTools: withoutProfileTool(DEFAULT_HARNESS_AGENT_CONFIG.builtinTools, 'web_search'),
-      caching: !localProvider,
-      effort: localProvider ? 'off' : DEFAULT_HARNESS_AGENT_CONFIG.effort,
+      caching: !plainChatProvider,
+      effort: plainChatProvider ? 'off' : DEFAULT_HARNESS_AGENT_CONFIG.effort,
     }),
     permissionMode: 'default',
     allowedTools: [],
@@ -327,12 +335,13 @@ New shell exports require restarting strands.`,
     }
   }
   const key = PROVIDERS[provider].fields[0]!.key
+  const keyUrl = PROVIDERS[provider].keyUrl
   return environment[key]
     ? { description: 'Credentials detected', status: 'success' }
     : {
         description: 'Setup required',
         status: 'error',
-        warning: `${key} was not detected.`,
+        warning: `${key} was not detected.${keyUrl ? ` Create a key at ${keyUrl}` : ''}`,
       }
 }
 

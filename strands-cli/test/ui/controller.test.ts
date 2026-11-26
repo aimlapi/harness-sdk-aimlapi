@@ -2228,6 +2228,7 @@ describe('ChatController', () => {
       { id: 'google', label: 'Google Gemini' },
       { id: 'ollama', label: 'Ollama' },
       { id: 'litellm', label: 'LiteLLM' },
+      { id: 'aimlapi', label: 'AI/ML API' },
     ])
     expect(panel.rows).toHaveLength(1)
     expect(panel.rows.flatMap((row) => (row.value ? [row.value] : []))).toEqual([])

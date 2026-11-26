@@ -548,7 +548,10 @@ function pythonProviderExtras(config: HarnessAgentConfig): string {
     if (provider === 'bedrock') {
       return []
     }
-    return [provider === 'bedrock-mantle' ? 'openai' : provider === 'google' ? 'gemini' : provider]
+    if (provider === 'bedrock-mantle' || provider === 'aimlapi') {
+      return ['openai']
+    }
+    return [provider === 'google' ? 'gemini' : provider]
   })
   return extras.length > 0 ? `[${[...new Set(extras)].sort().join(',')}]` : ''
 }
@@ -567,6 +570,7 @@ function environmentTemplate(config: HarnessAgentConfig): string {
     google: 'GEMINI_API_KEY',
     ollama: 'OLLAMA_HOST',
     litellm: 'LITELLM_BASE_URL',
+    aimlapi: 'AIMLAPI_API_KEY',
   }
   for (const provider of modelProviders(config)) {
     const key = providerKeys[provider]

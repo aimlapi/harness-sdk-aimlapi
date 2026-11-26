@@ -48,7 +48,8 @@ export {
 } from '../model/environment.js'
 
 export type PermissionMode = 'default' | 'bypassPermissions'
-export type ProviderId = 'bedrock' | 'bedrock-mantle' | 'anthropic' | 'openai' | 'google' | 'ollama' | 'litellm'
+export type ProviderId =
+  'bedrock' | 'bedrock-mantle' | 'anthropic' | 'openai' | 'google' | 'ollama' | 'litellm' | 'aimlapi'
 export type ProfileEffort = Effort
 export type ProfileContextManager = HarnessConfigContextManager
 
@@ -62,6 +63,7 @@ export const PROVIDER_LABELS: Readonly<Record<ProviderId, string>> = {
   google: 'Google Gemini',
   ollama: 'Ollama',
   litellm: 'LiteLLM',
+  aimlapi: 'AI/ML API',
 }
 
 export const PROVIDER_IDS: readonly ProviderId[] = Object.keys(PROVIDER_LABELS) as ProviderId[]

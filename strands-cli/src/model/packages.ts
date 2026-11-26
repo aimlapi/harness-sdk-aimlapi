@@ -10,6 +10,7 @@ export const PROVIDER_PACKAGES: Readonly<Partial<Record<ProviderId, string>>> = 
   'bedrock-mantle': 'openai',
   ollama: 'openai',
   litellm: 'openai',
+  aimlapi: 'openai',
   google: '@google/genai',
 }
 
